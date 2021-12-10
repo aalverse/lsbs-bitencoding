@@ -1,0 +1,356 @@
+Script started on Tue Nov 16 21:07:13 2021
+Restored session: Tue Nov 16 21:07:03 EST 2021
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004huuname -a[?2004l
+Darwin Aals-MacBook-Pro.local 21.1.0 Darwin Kernel Version 21.1.0: Wed Oct 13 17:33:23 PDT 2021; root:xnu-8019.41.5~1/RELEASE_X86_64 x86_64
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004hlls[?2004l
+Makefile			lab9_amahi_204_typescript
+conversion.c			out
+header
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004hccd out[1m/[0m[0m [?2004l
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204/out[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro out % [K[?2004hlls[?2004l
+conversion	conversion.dSYM
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204/out[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro out % [K[?2004hccd ..[?2004l
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004hlls[?2004l
+Makefile			lab9_amahi_204_typescript
+conversion.c			out
+header
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004hccat conversion.c[1m [0m[0m [?2004l
+
+#include "./header/conversion.h"
+
+typedef struct Binary{
+    int size;
+    unsigned char * data;
+}Binary;
+
+void ln(int lines){
+   for(int i  = 0; i < lines; i++){
+        printf("\n");
+   }
+}
+
+void print_args(int argc, char *argv[]) {
+    ln(1);
+    for(int i = 0; i < argc; i++){
+        printf(CYN "%s" RESET, argv[i]);
+        ln(1);
+    }
+}
+
+int requestInt(){
+    int number;
+    printf(CYN);
+    scanf("%d", &number);
+    printf(RESET);
+    return number;
+}
+
+void promptUserSeed(){
+    printf("Please enter a seed for random number generation: ");
+    srand(requestInt());
+    ln(1);
+}
+
+int randomNumber(){
+    return rand() % (MAX_NUMBER + 1 - MIN_NUMBER) + MIN_NUMBER;
+}
+
+void print_binary(Binary * bin){
+    printf(GRN "Binary Array: ");
+    for(int i = bin->size-1; i >= 0 ; i--){
+        PRINTBIN(bin->data[i]);
+        printf(" ");
+    }
+    printf(RESET);
+}
+
+void init_bytes(Binary * bin){
+    int i;
+    for(i = 0; i < bin->size; i++){
+        bin->data[i] = randomNumber();
+    }
+}
+
+int get_mask(int pos, unsigned char byte){
+    return (byte & ( 1 << pos ));
+}
+
+int get_bit(int pos, unsigned char byte){
+    return (byte & ( 1 << pos )) >> pos;
+}
+
+void setlsbs(unsigned char *p, unsigned char b0){
+    // printf(CYN "\n\t%c : %d" RESET, *p, b0);
+    if(b0==0 && get_bit(0, *p) == 1){
+        *p -=1;
+        return;
+    }
+    *p |= b0;
+    // printf(RED "\n\t%c : %d" RESET, *p, b0);
+}
+
+unsigned char getlsbs(Binary * bin){
+    unsigned char byte = '\x0';
+    for(int i = 0; i < bin->size; i++){
+        byte |= (bin->data[i] & ( 1 << 0 )) << i;
+        // PRINTBIN(byte);
+        
+    }
+    return byte;
+}
+
+void set_embedding(unsigned char byte, Binary * bin){
+    int i;
+    for(i = 0; i < bin->size; i++){
+        setlsbs(&bin->data[i], get_bit(i, byte));
+    }
+}
+
+int main(int argc, char *argv[]){
+    unsigned char byte0;
+
+    print_args(argc, argv);
+    ln(1); 
+    
+    if(argc <= 1){
+        promptUserSeed();
+    }else{
+        /* Seed initialization */
+        srand(atoi(argv[1]));
+    }
+
+    /* initialize binary */
+    Binary bin;
+    bin.size = DEFAULT_BYTES_SIZE;
+    bin.data = malloc(bin.size*(sizeof(unsigned char)));
+
+    /* initialized byte0 with random number */
+    byte0 = randomNumber();
+    ln(1);
+    printf(MAG "BYTE-0: "); 
+    PRINTBIN(byte0);
+    printf(" -> \'%c\' ", byte0);
+    printf(RESET);
+    ln(1);
+
+    /* initialized character array with random numbers*/
+    init_bytes(&bin);
+
+    print_binary(&bin);
+    ln(1);
+
+    printf(RED"\nEmbedded Array\n");
+    set_embedding(byte0, &bin);
+    print_binary(&bin);
+
+    printf(RED"\nCharacter: [%c]\nBinary[", getlsbs(&bin));
+    PRINTBIN(getlsbs(&bin));
+    printf("]\n");
+    printf(RESET);
+    free(bin.data);
+}
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004hccat Makefile[1m [0m[0m [?2004l
+# A simple Makefile
+# <Aarshad Mahi and G-00975690>
+# CS 262, Lab Section 221
+# Lab9
+
+TARGET = conversion
+PATH = ./out/
+
+CC = gcc
+ERROR = -pedantic-errors
+CFLAGS = -g -Wall ${ERROR} -o
+OUT = out
+
+all: ${TARGET}.c 
+	${CC} ${CFLAGS} ${PATH}${TARGET} ${TARGET}.c
+clean:
+	rm ${PATH}${TARGET}
+	rm -r ./.vscode
+run:
+	${CC} ${CFLAGS} ${PATH}${TARGET} ${TARGET}.c
+	${PATH}${TARGET}
+	[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004hccat he eader[1m/[0m[0m/*.h[?2004l
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RESET "\x1B[0m"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "color.h"
+
+#define BYTETOBINARYPATTERN "%d%d%d%d%d%d%d%d"
+#define BYTETOBINARY(byte)  \
+  (byte & 0x80 ? 1 : 0), \
+  (byte & 0x40 ? 1 : 0), \
+  (byte & 0x20 ? 1 : 0), \
+  (byte & 0x10 ? 1 : 0), \
+  (byte & 0x08 ? 1 : 0), \
+  (byte & 0x04 ? 1 : 0), \
+  (byte & 0x02 ? 1 : 0), \
+  (byte & 0x01 ? 1 : 0) 
+
+#define PRINTBIN(x) printf(BYTETOBINARYPATTERN, BYTETOBINARY(x));
+
+#define MAX_NUMBER 255+1
+#define MIN_NUMBER 0
+
+#define DEFAULT_BYTES_SIZE 8
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004hmmake[?2004l
+gcc -g -Wall -pedantic-errors -o ./out/conversion conversion.c
+[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h../out[1m/[0m[0m/conversion 1231[?2004l
+
+[36m./out/conversion[0m
+[36m1231[0m
+
+
+[35mBYTE-0: 10010010 -> '’' [0m
+[32mBinary Array: 01110000 10011010 01000110 01101110 11101000 11110100 00010011 11000011 [0m
+[31m
+Embedded Array
+[32mBinary Array: 01110001 10011010 01000110 01101111 11101000 11110100 00010011 11000010 [0m[31m
+Character: [’]
+Binary[10010010]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 1231  13 1 231 14123[?2004l
+
+[36m./out/conversion[0m
+[36m1212314123[0m
+
+
+[35mBYTE-0: 00110011 -> '3' [0m
+[32mBinary Array: 00100011 11111001 11100110 11101110 11010111 10110110 00000000 11010101 [0m
+[31m
+Embedded Array
+[32mBinary Array: 00100010 11111000 11100111 11101111 11010110 10110110 00000001 11010101 [0m[31m
+Character: [3]
+Binary[00110011]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 1212314123120937[?2004l
+
+[36m./out/conversion[0m
+[36m1212314123120937[0m
+
+
+[35mBYTE-0: 01001001 -> 'I' [0m
+[32mBinary Array: 01000011 10110110 00011111 11100100 01010100 00011100 11111011 10111011 [0m
+[31m
+Embedded Array
+[32mBinary Array: 01000010 10110111 00011110 11100100 01010101 00011100 11111010 10111011 [0m[31m
+Character: [I]
+Binary[01001001]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 1212314123120937            098[?2004l
+
+[36m./out/conversion[0m
+[36m1212098[0m
+
+
+[35mBYTE-0: 10100111 -> '§' [0m
+[32mBinary Array: 10100000 10110111 01011110 01110101 01000011 11000110 10000100 10101111 [0m
+[31m
+Embedded Array
+[32mBinary Array: 10100001 10110110 01011111 01110100 01000010 11000111 10000101 10101111 [0m[31m
+Character: [§]
+Binary[10100111]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 1212098  10192831[?2004l
+
+[36m./out/conversion[0m
+[36m1212010192831[0m
+
+
+[35mBYTE-0: 00001001 -> '	' [0m
+[32mBinary Array: 01010100 01011101 10000000 10000010 00101110 01111100 01011001 10111101 [0m
+[31m
+Embedded Array
+[32mBinary Array: 01010100 01011100 10000000 10000010 00101111 01111100 01011000 10111101 [0m[31m
+Character: [	]
+Binary[00001001]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 1212010192831             0912031[?2004l
+
+[36m./out/conversion[0m
+[36m0912031[0m
+
+
+[35mBYTE-0: 11101001 -> 'é' [0m
+[32mBinary Array: 00100001 01110110 11011110 10101011 10110100 01101001 01100011 01111100 [0m
+[31m
+Embedded Array
+[32mBinary Array: 00100001 01110111 11011111 10101010 10110101 01101000 01100010 01111101 [0m[31m
+Character: [é]
+Binary[11101001]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 0912031       128907102983[?2004l
+
+[36m./out/conversion[0m
+[36m128907102983[0m
+
+
+[35mBYTE-0: 10001010 -> 'Š' [0m
+[32mBinary Array: 10100101 01110011 10010110 01111000 00110110 11010011 00100010 11111101 [0m
+[31m
+Embedded Array
+[32mBinary Array: 10100101 01110010 10010110 01111000 00110111 11010010 00100011 11111100 [0m[31m
+Character: [Š]
+Binary[10001010]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 128907102983      [?2004l
+
+[36m./out/conversion[0m
+[36m128907[0m
+
+
+[35mBYTE-0: 00001001 -> '	' [0m
+[32mBinary Array: 10101100 10110111 01101000 00010001 00010111 11010100 10001011 01011101 [0m
+[31m
+Embedded Array
+[32mBinary Array: 10101100 10110110 01101000 00010000 00010111 11010100 10001010 01011101 [0m[31m
+Character: [	]
+Binary[00001001]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 128907102983      102983[12D0912031     12312344[?2004l
+
+[36m./out/conversion[0m
+[36m091203112312344[0m
+
+
+[35mBYTE-0: 00100011 -> '#' [0m
+[32mBinary Array: 00010011 11100000 00010010 11000010 01111100 11101111 10110100 10000010 [0m
+[31m
+Embedded Array
+[32mBinary Array: 00010010 11100000 00010011 11000010 01111100 11101110 10110101 10000011 [0m[31m
+Character: [#]
+Binary[00100011]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 091203112312344               99991203[?2004l
+
+[36m./out/conversion[0m
+[36m99991203[0m
+
+
+[35mBYTE-0: 00001111 -> '' [0m
+[32mBinary Array: 11101000 01001101 11011001 00101010 01101100 10000000 11100110 00000111 [0m
+[31m
+Embedded Array
+[32mBinary Array: 11101000 01001100 11011000 00101010 01101101 10000001 11100111 00000111 [0m[31m
+Character: []
+Binary[00001111]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h./out/conversion 99991203       8882727[?2004l
+
+[36m./out/conversion[0m
+[36m98882727[0m
+
+
+[35mBYTE-0: 10100111 -> '§' [0m
+[32mBinary Array: 01011010 11110010 01110011 11101010 11001000 00001101 11101000 01111001 [0m
+[31m
+Embedded Array
+[32mBinary Array: 01011011 11110010 01110011 11101010 11001000 00001101 11101001 01111001 [0m[31m
+Character: [§]
+Binary[10100111]
+[0m[1m[7m%[27m[1m[0m                                                                                ]7;file://Aals-MacBook-Pro.local/Users/aalm/gmu-262/lab9_amahi_204[0m[27m[24m[J(base) aalm@Aals-MacBook-Pro lab9_amahi_204 % [K[?2004h[?2004l
+
+Saving session...
+...saving history...truncating history files...
+...completed.
+
+Script done on Tue Nov 16 21:09:34 2021
